@@ -12,14 +12,14 @@ from misc import printdbg, epoch2str
 import time
 
 
-def is_valid_omegacoin_address(address, network='mainnet'):
+def is_valid_exilium_address(address, network='mainnet'):
     # Only public key addresses are allowed
     # A valid address is a RIPEMD-160 hash which contains 20 bytes
     # Prior to base58 encoding 1 version byte is prepended and
     # 4 checksum bytes are appended so the total number of
     # base58 encoded bytes should be 25.  This means the number of characters
     # in the encoding should be about 34 ( 25 * log2( 256 ) / log2( 58 ) ).
-    omegacoin_version = 140 if network == 'testnet' else 76
+    exilium_version = 140 if network == 'testnet' else 76
 
     # Check length (This is important because the base58 library has problems
     # with long addresses (which are invalid anyway).
@@ -35,7 +35,7 @@ def is_valid_omegacoin_address(address, network='mainnet'):
         # rescue from exception, not a valid Omega address
         return False
 
-    if (address_version != omegacoin_version):
+    if (address_version != exilium_version):
         return False
 
     return True
@@ -180,7 +180,7 @@ def create_superblock(proposals, event_block_height, budget_max, sb_epoch_time):
 
 
 # shims 'til we can fix the omegacoind side
-def SHIM_serialise_for_omegacoind(sentinel_hex):
+def SHIM_serialise_for_exiliumd(sentinel_hex):
     from models import DASHD_GOVOBJ_TYPES
     # unpack
     obj = deserialise(sentinel_hex)
@@ -199,16 +199,16 @@ def SHIM_serialise_for_omegacoind(sentinel_hex):
     obj = [obj]
 
     # re-pack
-    omegacoind_hex = serialise(obj)
-    return omegacoind_hex
+    exiliumd_hex = serialise(obj)
+    return exiliumd_hex
 
 
 # shims 'til we can fix the omegacoind side
-def SHIM_deserialise_from_omegacoind(omegacoind_hex):
+def SHIM_deserialise_from_exiliumd(exiliumd_hex):
     from models import DASHD_GOVOBJ_TYPES
 
     # unpack
-    obj = deserialise(omegacoind_hex)
+    obj = deserialise(exiliumd_hex)
 
     # shim from omegacoind
     # only one element in the array...
@@ -251,7 +251,7 @@ def did_we_vote(output):
     err_msg = ''
 
     try:
-        detail = output.get('detail').get('omegacoin.conf')
+        detail = output.get('detail').get('exilium.conf')
         result = detail.get('result')
         if 'errorMessage' in detail:
             err_msg = detail.get('errorMessage')
