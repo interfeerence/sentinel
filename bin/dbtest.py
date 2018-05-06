@@ -9,17 +9,17 @@ import config
 from models import Superblock, Proposal, GovernanceObject, Setting, Signal, Vote, Outcome, Watchdog
 from models import VoteSignals, VoteOutcomes
 from peewee import PeeweeException  # , OperationalError, IntegrityError
-from omegacoind import OmegaDaemon
-import omegacoinlib
+from exiliumd import ExiliumDaemon
+import exiliumlib
 from decimal import Decimal
-omegacoind = OmegaDaemon.from_omegacoin_conf(config.omegacoin_conf)
+exiliumd = ExiliumDaemon.from_exilium_conf(config.exilium_conf)
 import misc
 # ==============================================================================
 # do stuff here
 
 pr = Proposal(
     name='proposal7',
-    url='https://omegacentral.com/proposal7',
+    url='https://exiliumcentral.com/proposal7',
     payment_address='yTC62huR4YQEPn9AJHjnQxxreHSbgAoatV',
     payment_amount=39.23,
     start_epoch=1483250400,
@@ -56,7 +56,7 @@ else:
     print("Within window, we're good!")
 
 # pdb.set_trace()
-# omegacoind.get_object_list()
+# exiliumd.get_object_list()
 # ==============================================================================
 # pdb.set_trace()
 1
