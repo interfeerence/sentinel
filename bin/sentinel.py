@@ -5,7 +5,7 @@ sys.path.append(os.path.normpath(os.path.join(os.path.dirname(__file__), '../lib
 import init
 import config
 import misc
-from omegacoind import OmegaDaemon
+from exiliumd import ExiliumDaemon
 from models import Superblock, Proposal, GovernanceObject, Watchdog
 from models import VoteSignals, VoteOutcomes, Transient
 import socket
@@ -20,21 +20,21 @@ import argparse
 
 
 # sync omegacoind gobject list with our local relational DB backend
-def perform_omegacoind_object_sync(omegacoind):
-    GovernanceObject.sync(omegacoind)
+def perform_exiliumd_object_sync(exiliumd):
+    GovernanceObject.sync(exiliumd)
 
 
 # delete old watchdog objects, create new when necessary
-def watchdog_check(omegacoind):
+def watchdog_check(exiliumd):
     printdbg("in watchdog_check")
 
     # delete expired watchdogs
-    for wd in Watchdog.expired(omegacoind):
+    for wd in Watchdog.expired(exiliumd):
         printdbg("\tFound expired watchdog [%s], voting to delete" % wd.object_hash)
-        wd.vote(omegacoind, VoteSignals.delete, VoteOutcomes.yes)
+        wd.vote(exiliumd, VoteSignals.delete, VoteOutcomes.yes)
 
     # now, get all the active ones...
-    active_wd = Watchdog.active(omegacoind)
+    active_wd = Watchdog.active(exiliumd)
     active_count = active_wd.count()
 
     # none exist, submit a new one to the network
@@ -42,7 +42,7 @@ def watchdog_check(omegacoind):
         # create/submit one
         printdbg("\tNo watchdogs exist... submitting new one.")
         wd = Watchdog(created_at=int(time.time()))
-        wd.submit(omegacoind)
+        wd.submit(exiliumd)
 
     else:
         wd_list = sorted(active_wd, key=lambda wd: wd.object_hash)
@@ -50,35 +50,35 @@ def watchdog_check(omegacoind):
         # highest hash wins
         winner = wd_list.pop()
         printdbg("\tFound winning watchdog [%s], voting VALID" % winner.object_hash)
-        winner.vote(omegacoind, VoteSignals.valid, VoteOutcomes.yes)
+        winner.vote(exiliumd, VoteSignals.valid, VoteOutcomes.yes)
 
         # if remaining Watchdogs exist in the list, vote delete
         for wd in wd_list:
             printdbg("\tFound losing watchdog [%s], voting DELETE" % wd.object_hash)
-            wd.vote(omegacoind, VoteSignals.delete, VoteOutcomes.yes)
+            wd.vote(exiliumd, VoteSignals.delete, VoteOutcomes.yes)
 
     printdbg("leaving watchdog_check")
 
 
-def prune_expired_proposals(omegacoind):
+def prune_expired_proposals(exiliumd):
     # vote delete for old proposals
-    for proposal in Proposal.expired(omegacoind.superblockcycle()):
-        proposal.vote(omegacoind, VoteSignals.delete, VoteOutcomes.yes)
+    for proposal in Proposal.expired(exiliumd.superblockcycle()):
+        proposal.vote(exiliumd, VoteSignals.delete, VoteOutcomes.yes)
 
 
 # ping omegacoind
-def sentinel_ping(omegacoind):
+def sentinel_ping(exiliumd):
     printdbg("in sentinel_ping")
 
-    omegacoind.ping()
+    exiliumd.ping()
 
     printdbg("leaving sentinel_ping")
 
 
-def attempt_superblock_creation(omegacoind):
-    import omegacoinlib
+def attempt_superblock_creation(exiliumd):
+    import exiliumlib
 
-    if not omegacoind.is_masternode():
+    if not exiliumd.is_masternode():
         print("We are not a Masternode... can't submit superblocks!")
         return
 
@@ -89,7 +89,7 @@ def attempt_superblock_creation(omegacoind):
     # has this masternode voted on *any* superblocks at the given event_block_height?
     # have we voted FUNDING=YES for a superblock for this specific event_block_height?
 
-    event_block_height = omegacoind.next_superblock_height()
+    event_block_height = exiliumd.next_superblock_height()
 
     if Superblock.is_voted_funding(event_block_height):
         # printdbg("ALREADY VOTED! 'til next time!")
@@ -97,20 +97,20 @@ def attempt_superblock_creation(omegacoind):
         # vote down any new SBs because we've already chosen a winner
         for sb in Superblock.at_height(event_block_height):
             if not sb.voted_on(signal=VoteSignals.funding):
-                sb.vote(omegacoind, VoteSignals.funding, VoteOutcomes.no)
+                sb.vote(exiliumd, VoteSignals.funding, VoteOutcomes.no)
 
         # now return, we're done
         return
 
-    if not omegacoind.is_govobj_maturity_phase():
+    if not exiliumd.is_govobj_maturity_phase():
         printdbg("Not in maturity phase yet -- will not attempt Superblock")
         return
 
-    proposals = Proposal.approved_and_ranked(proposal_quorum=omegacoind.governance_quorum(), next_superblock_max_budget=omegacoind.next_superblock_max_budget())
-    budget_max = omegacoind.get_superblock_budget_allocation(event_block_height)
-    sb_epoch_time = omegacoind.block_height_to_epoch(event_block_height)
+    proposals = Proposal.approved_and_ranked(proposal_quorum=exiliumd.governance_quorum(), next_superblock_max_budget=exiliumd.next_superblock_max_budget())
+    budget_max = exiliumd.get_superblock_budget_allocation(event_block_height)
+    sb_epoch_time = exiliumd.block_height_to_epoch(event_block_height)
 
-    sb = omegacoinlib.create_superblock(proposals, event_block_height, budget_max, sb_epoch_time)
+    sb = exiliumlib.create_superblock(proposals, event_block_height, budget_max, sb_epoch_time)
     if not sb:
         printdbg("No superblock created, sorry. Returning.")
         return
@@ -118,12 +118,12 @@ def attempt_superblock_creation(omegacoind):
     # find the deterministic SB w/highest object_hash in the DB
     dbrec = Superblock.find_highest_deterministic(sb.hex_hash())
     if dbrec:
-        dbrec.vote(omegacoind, VoteSignals.funding, VoteOutcomes.yes)
+        dbrec.vote(exiliumd, VoteSignals.funding, VoteOutcomes.yes)
 
         # any other blocks which match the sb_hash are duplicates, delete them
         for sb in Superblock.select().where(Superblock.sb_hash == sb.hex_hash()):
             if not sb.voted_on(signal=VoteSignals.funding):
-                sb.vote(omegacoind, VoteSignals.delete, VoteOutcomes.yes)
+                sb.vote(exiliumd, VoteSignals.delete, VoteOutcomes.yes)
 
         printdbg("VOTED FUNDING FOR SB! We're done here 'til next superblock cycle.")
         return
@@ -131,24 +131,24 @@ def attempt_superblock_creation(omegacoind):
         printdbg("The correct superblock wasn't found on the network...")
 
     # if we are the elected masternode...
-    if (omegacoind.we_are_the_winner()):
+    if (exiliumd.we_are_the_winner()):
         printdbg("we are the winner! Submit SB to network")
-        sb.submit(omegacoind)
+        sb.submit(exiliumd)
 
 
-def check_object_validity(omegacoind):
+def check_object_validity(exiliumd):
     # vote (in)valid objects
     for gov_class in [Proposal, Superblock]:
         for obj in gov_class.select():
-            obj.vote_validity(omegacoind)
+            obj.vote_validity(exiliumd)
 
 
-def is_omegacoind_port_open(omegacoind):
+def is_omegacoind_port_open(exiliumd):
     # test socket open before beginning, display instructive message to MN
     # operators if it's not
     port_open = False
     try:
-        info = omegacoind.rpc_command('getgovernanceinfo')
+        info = exiliumd.rpc_command('getgovernanceinfo')
         port_open = True
     except (socket.error, JSONRPCException) as e:
         print("%s" % e)
@@ -157,21 +157,21 @@ def is_omegacoind_port_open(omegacoind):
 
 
 def main():
-    omegacoind = OmegaDaemon.from_omegacoin_conf(config.omegacoin_conf)
+    exiliumd = ExiliumDaemon.from_exilium_conf(config.exilium_conf)
     options = process_args()
 
     # check omegacoind connectivity
-    if not is_omegacoind_port_open(omegacoind):
-        print("Cannot connect to omegacoind. Please ensure omegacoind is running and the JSONRPC port is open to Sentinel.")
+    if not is_exiliumd_port_open(exiliumd):
+        print("Cannot connect to exiliumd. Please ensure exiliumd is running and the JSONRPC port is open to Sentinel.")
         return
 
     # check omegacoind sync
-    if not omegacoind.is_synced():
-        print("omegacoind not synced with network! Awaiting full sync before running Sentinel.")
+    if not exiliumd.is_synced():
+        print("exiliumd not synced with network! Awaiting full sync before running Sentinel.")
         return
 
     # ensure valid masternode
-    if not omegacoind.is_masternode():
+    if not exiliumd.is_masternode():
         print("Invalid Masternode Status, cannot continue.")
         return
 
@@ -203,22 +203,22 @@ def main():
     # ========================================================================
     #
     # load "gobject list" rpc command data, sync objects into internal database
-    perform_omegacoind_object_sync(omegacoind)
+    perform_exiliumd_object_sync(exiliumd)
 
-    if omegacoind.has_sentinel_ping:
-        sentinel_ping(omegacoind)
+    if exiliumd.has_sentinel_ping:
+        sentinel_ping(exiliumd)
     else:
         # delete old watchdog objects, create a new if necessary
-        watchdog_check(omegacoind)
+        watchdog_check(exiliumd)
 
     # auto vote network objects as valid/invalid
     # check_object_validity(omegacoind)
 
     # vote to delete expired proposals
-    prune_expired_proposals(omegacoind)
+    prune_expired_proposals(exiliumd)
 
     # create a Superblock if necessary
-    attempt_superblock_creation(omegacoind)
+    attempt_superblock_creation(exiliumd)
 
     # schedule the next run
     Scheduler.schedule_next_run()
