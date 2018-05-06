@@ -57,23 +57,23 @@ def is_database_correctly_configured():
     return configured
 
 
-def has_omegacoin_conf():
+def has_exilium_conf():
     import config
     import io
 
-    valid_omegacoin_conf = False
+    valid_exilium_conf = False
 
     # ensure omegacoin_conf exists & readable
     #
     # if not, print a message stating that Omega Core must be installed and
     # configured, including JSONRPC access in omegacoin.conf
     try:
-        f = io.open(config.omegacoin_conf)
-        valid_omegacoin_conf = True
+        f = io.open(config.exilium_conf)
+        valid_exilium_conf = True
     except IOError as e:
         print(e)
 
-    return valid_omegacoin_conf
+    return valid_exilium_conf
 
 
 # === begin main
@@ -95,8 +95,8 @@ def main():
         print("Please ensure correct database configuration.")
         sys.exit(1)
 
-    if not has_omegacoin_conf():
-        print("OmegaCoinCore must be installed and configured, including JSONRPC access in omegacoin.conf")
+    if not has_exilium_conf():
+        print("exiliumCore must be installed and configured, including JSONRPC access in exilium.conf")
         sys.exit(1)
 
 
