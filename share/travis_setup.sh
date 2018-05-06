@@ -1,9 +1,9 @@
 #!/bin/bash
 set -evx
 
-mkdir ~/.omegacoincore
+mkdir ~/.exilium
 
 # safety check
-if [ ! -f ~/.omegacoincore/.omegacoin.conf ]; then
-  cp share/omegacoin.conf.example ~/.omegacoincore/omegacoin.conf
+if [ ! -f ~/.exilium/.exilium.conf ]; then
+  cp share/exilium.conf.example ~/.exilium/exilium.conf
 fi
