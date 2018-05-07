@@ -6,13 +6,13 @@ os.environ['SENTINEL_CONFIG'] = os.path.normpath(os.path.join(os.path.dirname(__
 os.environ['SENTINEL_ENV'] = 'test'
 sys.path.append(os.path.normpath(os.path.join(os.path.dirname(__file__), '../../lib')))
 import config
-from omegacoin_config import OmegaConfig
+from exilium_config import ExiliumConfig
 
 
 @pytest.fixture
-def omegacoin_conf(**kwargs):
+def exilium_conf(**kwargs):
     defaults = {
-        'rpcuser': 'omegacoinrpc',
+        'rpcuser': 'exiliumrpc',
         'rpcpassword': 'EwJeV3fZTyTVozdECF627BkBMnNDwQaVLakG3A4wXYyk',
         'rpcport': 29241,
     }
@@ -34,17 +34,17 @@ rpcport={rpcport}
 
 
 def test_get_rpc_creds():
-    omegacoin_config = omegacoin_conf()
-    creds = OmegaConfig.get_rpc_creds(omegacoin_config, 'testnet')
+    exilium_config = exilium_conf()
+    creds = ExiliumConfig.get_rpc_creds(exilium_config, 'testnet')
 
     for key in ('user', 'password', 'port'):
         assert key in creds
-    assert creds.get('user') == 'omegacoinrpc'
+    assert creds.get('user') == 'exiliumrpc'
     assert creds.get('password') == 'EwJeV3fZTyTVozdECF627BkBMnNDwQaVLakG3A4wXYyk'
     assert creds.get('port') == 29241
 
-    omegacoin_config = omegacoin_conf(rpcpassword='s00pers33kr1t', rpcport=8000)
-    creds = OmegaConfig.get_rpc_creds(omegacoin_config, 'testnet')
+    exilium_config = exilium_conf(rpcpassword='s00pers33kr1t', rpcport=8000)
+    creds = ExiliumConfig.get_rpc_creds(exilium_config, 'testnet')
 
     for key in ('user', 'password', 'port'):
         assert key in creds
@@ -57,7 +57,7 @@ def test_get_rpc_creds():
 
     for key in ('user', 'password', 'port'):
         assert key in creds
-    assert creds.get('user') == 'omegacoinrpc'
+    assert creds.get('user') == 'exiliumrpc'
     assert creds.get('password') == 'EwJeV3fZTyTVozdECF627BkBMnNDwQaVLakG3A4wXYyk'
     assert creds.get('port') == 17778
 
