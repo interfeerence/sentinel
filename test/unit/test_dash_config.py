@@ -52,7 +52,7 @@ def test_get_rpc_creds():
     assert creds.get('password') == 's00pers33kr1t'
     assert creds.get('port') == 8000
 
-    no_port_specified = re.sub('\nrpcport=.*?\n', '\n', omegacoin_conf(), re.M)
+    no_port_specified = re.sub('\nrpcport=.*?\n', '\n', exilium_conf(), re.M)
     creds = OmegaConfig.get_rpc_creds(no_port_specified, 'testnet')
 
     for key in ('user', 'password', 'port'):
