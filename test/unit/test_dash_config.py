@@ -48,7 +48,7 @@ def test_get_rpc_creds():
 
     for key in ('user', 'password', 'port'):
         assert key in creds
-    assert creds.get('user') == 'omegacoinrpc'
+    assert creds.get('user') == 'exiliumrpc'
     assert creds.get('password') == 's00pers33kr1t'
     assert creds.get('port') == 8000
 
